@@ -1,0 +1,9 @@
+(fp_lib_table
+  (lib (name "DRA818V")(type "KiCad")(uri "${KIPRJMOD}/parts/DRA818V")(options "")(descr ""))
+  (lib (name "JST-S2B-PH-SM4-TB")(type "KiCad")(uri "${KIPRJMOD}/parts/JST-S2B-PH-SM4-TB")(options "")(descr ""))
+  (lib (name "ECS-120-20-3X-TR")(type "KiCad")(uri "${KIPRJMOD}/parts/ECS-120-20-3X-TR")(options "")(descr ""))
+  (lib (name "RP2040")(type "KiCad")(uri "${KIPRJMOD}/parts/RP2040")(options "")(descr ""))
+  (lib (name "USB_C_Receptacle_HRO_TYPE-C-31-M-12")(type "KiCad")(uri "${KIPRJMOD}/parts/USB_C_Receptacle_HRO_TYPE-C-31-M-12.pretty")(options "")(descr ""))
+  (lib (name "PJ320A")(type "KiCad")(uri "${KIPRJMOD}/parts/PJ320A")(options "")(descr ""))
+  (lib (name "DWM3000")(type "KiCad")(uri "${KIPRJMOD}/parts/DWM3000")(options "")(descr ""))
+)
