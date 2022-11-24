@@ -12,7 +12,7 @@ int main() {
     sleep_ms(3000);
     printf("test\n");
 
-    gpio_init(0);
+    /*gpio_init(0);
     gpio_set_dir(0, true);
 
     while (1) {
@@ -20,7 +20,7 @@ int main() {
         sleep_ms(500);
         gpio_put(0, 1);
         sleep_ms(500);
-    }
+    }*/
 
     steering_setup();
 
