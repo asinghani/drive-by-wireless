@@ -33,8 +33,6 @@ int main() {
     xassert(portSUPPORT_SMP == 1);
     xassert(configNUM_CORES == 2);
 
-    printf("Starting %s\n", ZONE_NAME);
-
 #ifdef ZONE_COCKPIT
     cockpit_main();
 #endif

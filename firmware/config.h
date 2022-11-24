@@ -32,4 +32,8 @@
 // Microseconds to raise test-point for
 #define TP_TIME_US 100
 
+#define STEERING_UART uart1
+#define STEERING_RX IO_8
+#define STEERING_TX IO_9
+
 #endif
