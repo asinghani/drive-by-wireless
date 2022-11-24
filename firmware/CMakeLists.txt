@@ -35,6 +35,10 @@ function(setup_target target_name)
 endfunction()
 
 
+# Should not need to change anything below this point
+# Any library-additions should be in the above block
+# to maintain consistency across build targets
+
 setup_target(zone_cockpit)
 target_compile_definitions(zone_cockpit PRIVATE
     ZONE_COCKPIT=1
