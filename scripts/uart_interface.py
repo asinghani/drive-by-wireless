@@ -44,7 +44,7 @@ class UARTWheelInterface:
 		self.s.write(bytes([0x01, s, self.throttle, self.btns, chk]))
 
 		print("[UART] TX update", self.steering, self.throttle,
-			  		"{:08b}".format(self.btns))
+                "{:08b}".format(self.btns))
 
 	def _loop(self):
 		while True:
