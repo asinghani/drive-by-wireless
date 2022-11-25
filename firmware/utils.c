@@ -11,3 +11,8 @@ void _xassert_fail(const char* cond, int line) {
     }
 }
 
+int clamp(int x, int lo, int hi) {
+    if (x > hi) return hi;
+    if (x < lo) return lo;
+    return x;
+}

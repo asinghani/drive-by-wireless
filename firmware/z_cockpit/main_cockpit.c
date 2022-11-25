@@ -3,12 +3,27 @@
 #include "semphr.h"
 
 #include <stdio.h>
+#include <string.h>
 #include "peripherals/testpoints.h"
 #include "peripherals/steering_wheel.h"
 
+struct CockpitState {
+    int8_t angle;
+    uint8_t throttle;
+    bool btn_brake;
+    bool btn_BL;
+    bool btn_BR;
+
+    int8_t feedback;
+
+    bool blinker_left;
+    bool blinker_right;
+} shm_cockpit;
+
 // Hardware setup
 void cockpit_setup() {
-    steering_setup();
+    memset(&shm_cockpit, 0, sizeof(shm_cockpit));
+    wheel_setup();
 }
 
 static void cockpit_uwb_task(void *arg);
@@ -22,7 +37,7 @@ void cockpit_main() {
 
     TaskHandle_t uwb_task;
     xTaskCreate(cockpit_uwb_task, "cockpit_uwb_task",
-            configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, &uwb_task);
+            configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, &uwb_task);
     vTaskCoreAffinitySet(uwb_task, 2);
 
     TaskHandle_t wheel_read_task;
@@ -44,19 +59,6 @@ void cockpit_main() {
     vTaskStartScheduler();
 }
 
-struct CockpitState {
-    int8_t angle;
-    uint8_t throttle;
-    bool btn_brake;
-    bool btn_BL;
-    bool btn_BR;
-
-    int8_t feedback;
-
-    bool blinker_left;
-    bool blinker_right;
-} shm_cockpit;
-
 static void cockpit_uwb_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
@@ -72,13 +74,13 @@ static void cockpit_wheel_read_task(void *arg) {
 
     while (true) {
 		vTaskDelayUntil(&tick, 20);
-        steering_update();
+        wheel_update();
 
-        shm_cockpit.angle = steering_get_angle();
-        shm_cockpit.throttle = steering_get_throttle();
-        shm_cockpit.btn_brake = steering_get_brake();
-        shm_cockpit.btn_BL = steering_get_BL();
-        shm_cockpit.btn_BR = steering_get_BR();
+        shm_cockpit.angle = wheel_get_angle();
+        shm_cockpit.throttle = wheel_get_throttle();
+        shm_cockpit.btn_brake = wheel_get_brake();
+        shm_cockpit.btn_BL = wheel_get_BL();
+        shm_cockpit.btn_BR = wheel_get_BR();
     }
 }
 
@@ -88,7 +90,7 @@ static void cockpit_wheel_write_task(void *arg) {
     while (true) {
 		vTaskDelayUntil(&tick, 20);
         //printf("FEEDBACK %d\n", shm_cockpit.feedback);
-        steering_send_feedback(shm_cockpit.feedback);
+        wheel_send_feedback(shm_cockpit.feedback);
     }
 }
 

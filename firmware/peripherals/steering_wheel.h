@@ -1,16 +1,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void steering_setup();
-bool steering_update();
-void steering_send_feedback(int8_t feedback);
-int8_t steering_get_angle();
-uint8_t steering_get_throttle();
-bool steering_get_BL();
-bool steering_get_BR();
-bool steering_get_A();
-bool steering_get_B();
-bool steering_get_X();
-bool steering_get_Y();
-bool steering_get_brake();
+void wheel_setup();
+bool wheel_update();
+void wheel_send_feedback(int8_t feedback);
+int8_t wheel_get_angle();
+uint8_t wheel_get_throttle();
+bool wheel_get_BL();
+bool wheel_get_BR();
+bool wheel_get_A();
+bool wheel_get_B();
+bool wheel_get_X();
+bool wheel_get_Y();
+bool wheel_get_brake();
 
