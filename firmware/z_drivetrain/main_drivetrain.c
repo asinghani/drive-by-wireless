@@ -54,7 +54,7 @@ static void drivetrain_uwb_task(void *arg) {
     }
 }
 
-static void drivetrain_servo_task(void *arg) {
+static void drivetrain_motor_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
