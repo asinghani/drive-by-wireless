@@ -116,7 +116,7 @@ static void cockpit_uwb_task(void *arg) {
         }
         else num_steering_failures++;
 
-        sleep_us(2000);
+        busy_wait_us(2000);
 
 
         // Request-response with drivetrain zone
@@ -136,7 +136,7 @@ static void cockpit_uwb_task(void *arg) {
         }
         else num_drivetrain_failures++;
 
-        sleep_us(2000);
+        busy_wait_us(2000);
 
 
         if ((num_steering_failures > MAX_COMM_FAILURES) || 
@@ -161,12 +161,19 @@ static void cockpit_uwb_task(void *arg) {
 
 static void cockpit_wheel_read_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
+    
+    float iir = 0;
 
     while (true) {
 		vTaskDelayUntil(&tick, 20);
         wheel_update();
 
-        shm_cockpit.angle = wheel_get_angle();
+        int angle = wheel_get_angle();
+        iir = 0.8*iir + 0.2*angle;
+        iir = clamp(iir, -100, 100);
+        
+
+        shm_cockpit.angle = clamp(iir, -95, 95);
         shm_cockpit.throttle = wheel_get_throttle();
         shm_cockpit.btn_brake = wheel_get_brake();
         shm_cockpit.btn_BL = wheel_get_BL();

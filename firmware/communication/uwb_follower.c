@@ -83,7 +83,7 @@ void uwb_follower_loop() {
                 send_msg(sizeof(tx_msg), tx_msg, 0);
 
                 // Sleep to wait for next window
-                sleep_us(4000);
+                busy_wait_us(4000);
                 break;
         }
 

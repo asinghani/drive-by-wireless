@@ -132,7 +132,7 @@ static void steering_feedback_task(void *arg) {
 
         taskENTER_CRITICAL();
         adc_select_input(STEERING_FEEDBACK_ADC);
-        sleep_us(20);
+        busy_wait_us(20);
         int adc_out = adc_read();
         taskEXIT_CRITICAL();
 

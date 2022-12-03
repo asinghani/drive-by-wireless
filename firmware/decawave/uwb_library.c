@@ -48,10 +48,10 @@ void uwb_reset() {
     // ResetN is active-low, we'll drive it low for a while, then let it float
     gpio_set_dir(UWB_PIN_RSTN, GPIO_OUT);
     gpio_put(UWB_PIN_RSTN, 0);
-    sleep_ms(1);
+    busy_wait_ms(1);
     gpio_set_dir(UWB_PIN_RSTN, false);
     gpio_disable_pulls(UWB_PIN_RSTN);
-    sleep_ms(10);
+    busy_wait_ms(10);
 }
 
 // Function to receive UWB message into buffer
@@ -144,7 +144,7 @@ void uwb_init() {
     spi_uwb_init();
     uwb_reset();
 
-    sleep_ms(10);
+    busy_wait_ms(10);
 
     if (dwt_initialise(DWT_DW_INIT) == DWT_ERROR) {
         printf("INIT FAILED");
@@ -168,6 +168,6 @@ void uwb_init() {
     /* Set response frame timeout. */
     dwt_setrxtimeout(RX_TIMEOUT_UUS);
 
-    sleep_ms(10);
+    busy_wait_ms(10);
 }
 

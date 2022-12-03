@@ -20,14 +20,14 @@ extern void steering_main();
 
 int main() {
     // Setup common peripherals
-    sleep_ms(1000);
+    busy_wait_ms(100);
     xosc_init();
     stdio_init_all();
     tp_init();
 
-    for (int i = 0; i <= 12; i++) {
+    for (int i = 0; i <= 4; i++) {
         tp_statusled(i % 2);
-        sleep_ms(200);
+        busy_wait_ms(50);
     }
     printf("Hello from zone %s\n", ZONE_NAME);
 

@@ -20,7 +20,7 @@ void tp_init() {
     // Cannot use tp_raise because scheduler isn't running yet
     for (int i = 1; i <= 6; i++) {
         gpio_put(i, 1);
-        sleep_us(TP_TIME_US);
+        busy_wait_us(TP_TIME_US);
         gpio_put(i, 0);
     }
 }
@@ -33,7 +33,7 @@ void tp_raise(int tp) {
     xassert((tp >= 1) && (tp <= 6));
     vTaskSuspendAll();
     gpio_put(tp, 1);
-    sleep_us(TP_TIME_US);
+    busy_wait_us(TP_TIME_US);
     gpio_put(tp, 0);
     xTaskResumeAll();
 }
