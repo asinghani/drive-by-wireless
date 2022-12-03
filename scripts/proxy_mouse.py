@@ -10,7 +10,7 @@ import pygame
 from uart_interface import *
 
 UPDATE_INTERVAL_MS = 50
-PORT = "/dev/tty.usbserial-ABSCEYPL"
+PORT = sys.argv[1]
 
 iface = UARTWheelInterface(PORT)
 iface.start()
