@@ -9,7 +9,7 @@ int8_t steering = 0;
 uint8_t throttle = 0;
 uint8_t buttons = 0;
 
-void steering_setup() {
+void wheel_setup() {
     uart_init(STEERING_UART, 115200);
     gpio_set_function(STEERING_RX, GPIO_FUNC_UART);
     gpio_set_function(STEERING_TX, GPIO_FUNC_UART);
@@ -17,7 +17,7 @@ void steering_setup() {
     while (uart_is_readable(STEERING_UART)) uart_getc(STEERING_UART);
 }
 
-bool steering_update() {
+bool wheel_update() {
     if (!uart_is_readable(STEERING_UART)) return false;
 
     // Try to find a start byte
@@ -50,17 +50,17 @@ bool steering_update() {
     return true;
 }
 
-void steering_send_feedback(int8_t feedback) {
+void wheel_send_feedback(int8_t feedback) {
     uart_putc(STEERING_UART, feedback);
 }
 
-int8_t steering_get_angle() { return steering; }
-uint8_t steering_get_throttle() { return throttle; }
-bool steering_get_BL() { return !!(buttons & 0x80); }
-bool steering_get_BR() { return !!(buttons & 0x40); }
-bool steering_get_A() { return !!(buttons & 0x20); }
-bool steering_get_B() { return !!(buttons & 0x10); }
-bool steering_get_X() { return !!(buttons & 0x08); }
-bool steering_get_Y() { return !!(buttons & 0x04); }
-bool steering_get_brake() { return !!(buttons & 0x02); }
+int8_t wheel_get_angle() { return steering; }
+uint8_t wheel_get_throttle() { return throttle; }
+bool wheel_get_BL() { return !!(buttons & 0x80); }
+bool wheel_get_BR() { return !!(buttons & 0x40); }
+bool wheel_get_A() { return !!(buttons & 0x20); }
+bool wheel_get_B() { return !!(buttons & 0x10); }
+bool wheel_get_X() { return !!(buttons & 0x08); }
+bool wheel_get_Y() { return !!(buttons & 0x04); }
+bool wheel_get_brake() { return !!(buttons & 0x02); }
 

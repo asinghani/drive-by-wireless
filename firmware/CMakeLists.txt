@@ -27,6 +27,8 @@ function(setup_target target_name)
 
     target_link_libraries(${target_name}
         pico_stdlib 
+        hardware_pwm
+        hardware_clocks
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap1
     )
