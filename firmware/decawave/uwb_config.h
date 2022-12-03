@@ -6,7 +6,7 @@
 
 /* Receive response timeout, expressed in UWB microseconds. */
 #define RX_RESP_TO_UUS 4000
-#define RX_TIMEOUT_UUS 6000
+#define RX_TIMEOUT_UUS 8500
 
 #define PERIOD 500000
 #define MAX_MISS 3

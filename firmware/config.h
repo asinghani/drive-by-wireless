@@ -12,6 +12,10 @@
 #define IO_9 20
 #define IO_10 19
 
+// Maximum packet loss before failure state
+#define MAX_COMM_FAILURES 5
+#define COMM_TIMEOUT_MS 80
+
 // Cockpit zone config
 #define STEERING_UART uart1
 #define STEERING_RX IO_8

@@ -16,3 +16,13 @@ int clamp(int x, int lo, int hi) {
     if (x < lo) return lo;
     return x;
 }
+
+float absf(float x) {
+    if (x < 0) return -x;
+    return x;
+}
+
+int32_t millis() {
+    absolute_time_t ts = get_absolute_time();
+    return to_ms_since_boot(ts);
+}

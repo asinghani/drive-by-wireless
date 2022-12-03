@@ -15,12 +15,20 @@
 #include "decawave/uwb_library.h"
 #include "config.h"
 #include "utils.h"
+#include "types.h"
 
 struct DrivetrainState {
     uint8_t throttle;
     bool brake;
+    float voltage_vbat;
+    float voltage_vreg;
 
-    // TODO blinker
+    int32_t ts_offset;
+    int32_t blinker_start_ts;
+    bool blink_left;
+    bool blink_right;
+
+    bool is_failure_state;
 } shm_drivetrain;
 
 // Hardware setup
@@ -52,36 +60,52 @@ void drivetrain_main() {
     vTaskStartScheduler();
 }
 
-static uint8_t rx_buffer[127];
-static uint8_t tx_msg[125];
+static uint8_t tx_pkt_raw[120];
+static uint8_t rx_pkt_raw[128];
 
 static void drivetrain_uwb_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
-    printf("Start UWB follower\n");
-
     int ctr = 0;
     bool success;
+    int32_t last_rx_ts = 0;
+
+    // Use fixed-size buffers to facilitate encryption,
+    // but alias them to structs to make manipulation easier
+    drivetrain_pkt_t *tx_pkt = (void*) &tx_pkt_raw;
+    cockpit_pkt_t *rx_pkt = (void*) &rx_pkt_raw;
+
     while (true) {
-        memset(rx_buffer, 0, sizeof(rx_buffer));
-        success = (receive_msg(rx_buffer) != -1);
-        if (success && (rx_buffer[0] == ZID_COCKPIT) && (rx_buffer[1] == ZONE_ID)) {
-            tx_msg[0] = ZONE_ID;
-            tx_msg[1] = ZID_COCKPIT;
-            send_msg(sizeof(tx_msg), tx_msg, 0);
+        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
+        success = (receive_msg(rx_pkt_raw) != -1);
+        if (success && (rx_pkt->src == ZID_COCKPIT) && 
+                (rx_pkt->dst == ZONE_ID)) {
+
+            printf("RX %d %d %d\n", success, rx_pkt->src, rx_pkt->dst);
+            last_rx_ts = millis();
+            shm_drivetrain.throttle = rx_pkt->throttle;
+            shm_drivetrain.brake = rx_pkt->brake;
+            shm_drivetrain.ts_offset = 0; // TODO
+            shm_drivetrain.blinker_start_ts = rx_pkt->blinker_start_ts;
+            shm_drivetrain.blink_left = rx_pkt->blink_left;
+            shm_drivetrain.blink_right = rx_pkt->blink_right;
+            shm_drivetrain.is_failure_state = rx_pkt->is_failure_state;
+
+            tx_pkt->src = ZONE_ID;
+            tx_pkt->dst = ZID_COCKPIT;
+            tx_pkt->voltage_vbat = shm_drivetrain.voltage_vbat;
+            tx_pkt->voltage_vreg = shm_drivetrain.voltage_vreg;
+            send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
         }
 
+        if ((millis() - last_rx_ts) > COMM_TIMEOUT_MS) {
+            shm_drivetrain.is_failure_state = true;
+            shm_drivetrain.throttle = 0;
+            shm_drivetrain.brake = true;
+        }
+
+        tp_statusled(shm_drivetrain.is_failure_state);
         ctr++;
-    }
-
-    bool up = false;
-    while (true) {
-        /*tp_statusled(1);
-		vTaskDelayUntil(&tick, 1000);
-        tp_statusled(0);
-		vTaskDelayUntil(&tick, 1000);*/
-
-		vTaskDelayUntil(&tick, 20);
     }
 }
 

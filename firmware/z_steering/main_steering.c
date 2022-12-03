@@ -16,12 +16,18 @@
 #include "decawave/uwb_library.h"
 #include "config.h"
 #include "utils.h"
+#include "types.h"
 
 struct SteeringState {
     int8_t angle;
     int8_t feedback;
 
-    // TODO blinker
+    int32_t ts_offset;
+    int32_t blinker_start_ts;
+    bool blink_left;
+    bool blink_right;
+
+    bool is_failure_state;
 } shm_steering;
 
 // Hardware setup
@@ -62,38 +68,50 @@ void steering_main() {
     vTaskStartScheduler();
 }
 
-static uint8_t rx_buffer[127];
-static uint8_t tx_msg[125];
+static uint8_t tx_pkt_raw[120];
+static uint8_t rx_pkt_raw[128];
 
 static void steering_uwb_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
-    printf("Start UWB follower\n");
-
     int ctr = 0;
     bool success;
+    int32_t last_rx_ts = 0;
+
+    // Use fixed-size buffers to facilitate encryption,
+    // but alias them to structs to make manipulation easier
+    steering_pkt_t *tx_pkt = (void*) &tx_pkt_raw;
+    cockpit_pkt_t *rx_pkt = (void*) &rx_pkt_raw;
+
     while (true) {
-        memset(rx_buffer, 0, sizeof(rx_buffer));
-        success = (receive_msg(rx_buffer) != -1);
-        if (success && (rx_buffer[0] == ZID_COCKPIT) && (rx_buffer[1] == ZONE_ID)) {
-            tx_msg[0] = ZONE_ID;
-            tx_msg[1] = ZID_COCKPIT;
-            send_msg(sizeof(tx_msg), tx_msg, 0);
+        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
+        success = (receive_msg(rx_pkt_raw) != -1);
+        if (success && (rx_pkt->src == ZID_COCKPIT) && 
+                (rx_pkt->dst == ZONE_ID)) {
+
+            printf("RX %d %d %d\n", success, rx_pkt->src, rx_pkt->dst);
+
+            last_rx_ts = millis();
+            shm_steering.angle = rx_pkt->angle;
+            shm_steering.ts_offset = 0; // TODO
+            shm_steering.blinker_start_ts = rx_pkt->blinker_start_ts;
+            shm_steering.blink_left = rx_pkt->blink_left;
+            shm_steering.blink_right = rx_pkt->blink_right;
+            shm_steering.is_failure_state = rx_pkt->is_failure_state;
+
+            tx_pkt->src = ZONE_ID;
+            tx_pkt->dst = ZID_COCKPIT;
+            tx_pkt->feedback = shm_steering.feedback;
+            send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
         }
 
+        if ((millis() - last_rx_ts) > COMM_TIMEOUT_MS) {
+            shm_steering.is_failure_state = true;
+            shm_steering.angle = 0;
+        }
+
+        tp_statusled(shm_steering.is_failure_state);
         ctr++;
-    }
-
-    bool up = false;
-    while (true) {
-        /*tp_statusled(1);
-		vTaskDelayUntil(&tick, 1000);
-        tp_statusled(0);
-		vTaskDelayUntil(&tick, 1000);*/
-
-		vTaskDelayUntil(&tick, 20);
-        shm_steering.angle += 2;
-        if (shm_steering.angle >= 100) shm_steering.angle = -100;
     }
 }
 
@@ -110,14 +128,20 @@ static void steering_feedback_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-		vTaskDelayUntil(&tick, 200);
+		vTaskDelayUntil(&tick, 50);
 
         taskENTER_CRITICAL();
         adc_select_input(STEERING_FEEDBACK_ADC);
         sleep_us(20);
-        int x = adc_read();
+        int adc_out = adc_read();
         taskEXIT_CRITICAL();
 
-        printf("ADC %d\n", x);
+        float state = ((shm_steering.angle > 0) ? -1 : 1)*(adc_out-35)*0.3 + (-shm_steering.angle*0.2);
+        state = state * 0.5;
+        if (absf(shm_steering.angle) < 5) state = 0;
+        int out = state;
+        out = clamp(out, -80, 80);
+
+        shm_steering.feedback = out;
     }
 }

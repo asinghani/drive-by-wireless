@@ -75,7 +75,7 @@ int receive_msg(uint8_t *rx_buf) {
     {
     };
 
-    if (status_reg & SYS_STATUS_ALL_RX_ERR) {
+    /*if (status_reg & SYS_STATUS_ALL_RX_ERR) {
         if (status_reg & SYS_STATUS_RXPHE_BIT_MASK)  printf("err RXPHE\n");  // Phy. Header Error
         if (status_reg & SYS_STATUS_RXFCE_BIT_MASK)  printf("err RXFCE\n");  // Rcvd Frame & CRC Error
         if (status_reg & SYS_STATUS_RXFSL_BIT_MASK)  printf("err RXFSL\n");  // Frame Sync Loss
@@ -83,7 +83,7 @@ int receive_msg(uint8_t *rx_buf) {
         if (status_reg & SYS_STATUS_ARFE_BIT_MASK)   printf("err ARFE\n");   // Rcv Frame Error
         if (status_reg & SYS_STATUS_CIAERR_BIT_MASK) printf("err CIAERR\n"); 
         // if (status_reg & SYS_STATUS_RXFTO_BIT_MASK) printf("rxerr: RXFT0\n");  // Timeout!
-    }
+    }*/
 
     if (status_reg & SYS_STATUS_RXFCG_BIT_MASK) {
 
@@ -161,6 +161,9 @@ void uwb_init() {
 
     /* Configure the TX spectrum parameters (power PG delay and PG Count) */
     dwt_configuretxrf(&txconfig_options);
+
+    dwt_setleds(DWT_LEDS_ENABLE | DWT_LEDS_INIT_BLINK);
+    dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
 
     /* Set response frame timeout. */
     dwt_setrxtimeout(RX_TIMEOUT_UUS);

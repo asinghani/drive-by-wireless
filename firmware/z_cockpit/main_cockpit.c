@@ -11,6 +11,7 @@
 #include "decawave/uwb_library.h"
 #include "config.h"
 #include "utils.h"
+#include "types.h"
 
 struct CockpitState {
     int8_t angle;
@@ -20,6 +21,8 @@ struct CockpitState {
     bool btn_BR;
 
     int8_t feedback;
+    float voltage_vbat;
+    float voltage_vreg;
 
     bool blinker_left;
     bool blinker_right;
@@ -67,30 +70,90 @@ void cockpit_main() {
 }
 
 
-static uint8_t rx_buffer[127];
-static uint8_t tx_msg[125];
+static uint8_t tx_pkt_raw[120];
+static uint8_t rx_pkt_raw[128];
 
 static void cockpit_uwb_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
-    printf("start UWB leader\n");
-
     int ctr = 0;
     bool success;
-    while (true) {
-        tx_msg[0] = ZONE_ID;
-        tx_msg[1] = ZID_STEERING;
-        send_msg(sizeof(tx_msg), tx_msg, 0);
-        memset(rx_buffer, 0, sizeof(rx_buffer));
-        success = (receive_msg(rx_buffer) != -1);
-        if (success) printf("got %d\n", rx_buffer[0], rx_buffer[1]);
 
-        tx_msg[0] = ZONE_ID;
-        tx_msg[1] = ZID_DRIVETRAIN;
-        send_msg(sizeof(tx_msg), tx_msg, 0);
-        memset(rx_buffer, 0, sizeof(rx_buffer));
-        success = (receive_msg(rx_buffer) != -1);
-        if (success) printf("got %d\n", rx_buffer[0], rx_buffer[1]);
+    int num_steering_failures = 0;
+    int num_drivetrain_failures = 0;
+    bool is_failure_state = false;
+
+    // Use fixed-size buffers to facilitate encryption,
+    // but alias them to structs to make manipulation easier
+    cockpit_pkt_t *tx_pkt = (void*) &tx_pkt_raw;
+    steering_pkt_t *pkt_s = (void*) &rx_pkt_raw;
+    drivetrain_pkt_t *pkt_d = (void*) &rx_pkt_raw;
+
+    while (true) {
+        // Populate the packet based on current state
+        tx_pkt->src = ZONE_ID;
+        tx_pkt->angle = shm_cockpit.angle;
+        tx_pkt->throttle = shm_cockpit.throttle;
+        tx_pkt->brake = shm_cockpit.btn_brake;
+        tx_pkt->is_failure_state = is_failure_state;
+        tx_pkt->blinker_start_ts = 0;
+        tx_pkt->blink_left = false;
+        tx_pkt->blink_right = false;
+
+        // Request-response with steering zone
+        tx_pkt->dst = ZID_STEERING;
+        tx_pkt->current_ts = 0; // TODO millis();
+        // TODO encryption
+        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
+        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
+        success = (receive_msg(rx_pkt_raw) != -1);
+        success = success && (pkt_d->src == ZID_STEERING) &&
+                    (pkt_d->dst == ZONE_ID);
+        // TODO decryption
+        if (success) {
+            num_steering_failures = 0;
+            shm_cockpit.feedback = pkt_s->feedback;
+        }
+        else num_steering_failures++;
+
+        sleep_us(2000);
+
+
+        // Request-response with drivetrain zone
+        tx_pkt->dst = ZID_DRIVETRAIN;
+        tx_pkt->current_ts = 0; // TODO millis();
+        // TODO encryption
+        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
+        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
+        success = (receive_msg(rx_pkt_raw) != -1);
+        success = success && (pkt_d->src == ZID_DRIVETRAIN) &&
+                    (pkt_d->dst == ZONE_ID);
+        // TODO decryption
+        if (success) {
+            num_drivetrain_failures = 0;
+            shm_cockpit.voltage_vbat = pkt_d->voltage_vbat;
+            shm_cockpit.voltage_vreg = pkt_d->voltage_vreg;
+        }
+        else num_drivetrain_failures++;
+
+        sleep_us(2000);
+
+
+        if ((num_steering_failures > MAX_COMM_FAILURES) || 
+                (num_drivetrain_failures > MAX_COMM_FAILURES)) {
+
+            is_failure_state = true;
+
+            // Don't inundate console with prints
+            if ((ctr % 10) == 0) {
+                printf("failure state %d %d\n", num_steering_failures,
+                        num_drivetrain_failures);
+            }
+
+        } else {
+            is_failure_state = false;
+        }
+        tp_statusled(is_failure_state);
 
         ctr++;
     }
@@ -125,8 +188,7 @@ static void cockpit_blinker_fsm_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-        tp_statusled(shm_cockpit.btn_brake);
-        shm_cockpit.feedback = shm_cockpit.btn_brake ? 0 : shm_cockpit.angle;
+        //shm_cockpit.feedback = shm_cockpit.btn_brake ? 0 : shm_cockpit.angle;
 		vTaskDelayUntil(&tick, 20);
     }
 }
