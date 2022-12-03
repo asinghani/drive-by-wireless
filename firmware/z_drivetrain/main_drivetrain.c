@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "peripherals/testpoints.h"
-#include "peripherals/drivetrain_servo.h"
+#include "peripherals/drivetrain_motor.h"
 
 struct DrivetrainState {
     int8_t motor_speed;
