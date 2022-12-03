@@ -17,7 +17,6 @@ enum blinker_states {
 	RIGHT_BLNK_2,
     LEFT_BLINK,
 	LEFT_BLINK_2,
-    RESET,
 } blinker_state;
 
 enum events {
@@ -27,6 +26,7 @@ enum events {
 	RIGHT_STEER_UNDER_THRESH_2,
 	LEFT_STEER_OVER_THRESH_1,
 	LEFT_STEER_UNDER_THRESH_2,
+    RESET
 };
 
 
