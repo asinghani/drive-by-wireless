@@ -24,7 +24,9 @@
 
 
 // Drivetrain zone config
-
+#define DRIVETRAIN_EN IO_8
+#define DRIVETRAIN_FW IO_9
+#define DRIVETRAIN_BW IO_10
 
 // Blinker I/O pins
 #define IO_BLINKL 18
