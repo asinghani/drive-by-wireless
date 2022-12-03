@@ -18,8 +18,15 @@ function(setup_target target_name)
         ${headers}
     )
 
+    target_compile_definitions(${target_name} PUBLIC
+        PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64
+    )
+
     target_include_directories(${target_name} PRIVATE
         .
+        decawave
+        peripherals
+        communication
     )
 
     pico_enable_stdio_usb(${target_name} 1)
@@ -27,7 +34,9 @@ function(setup_target target_name)
 
     target_link_libraries(${target_name}
         pico_stdlib 
+        hardware_adc
         hardware_pwm
+        hardware_spi
         hardware_clocks
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap1

@@ -21,7 +21,8 @@
 #define STEERING_SERVO_IO IO_10
 #define STEERING_SERVO_CENTER 1385 // Determined experimentally
 #define STEERING_SERVO_RANGE 300
-
+#define STEERING_FEEDBACK_IO IO_1
+#define STEERING_FEEDBACK_ADC 2 // ch2 = gpio28
 
 // Drivetrain zone config
 
@@ -46,7 +47,31 @@
 #define IO_TP5 5
 #define IO_TP6 6
 
+// UWB config
+#define UWB_PIN_MISO 12
+#define UWB_PIN_CS   13
+#define UWB_PIN_SCK  14
+#define UWB_PIN_MOSI 15
+#define UWB_PIN_RSTN 16
+#define UWB_SPI_PORT spi1
+
 // Microseconds to raise test-point for
 #define TP_TIME_US 100
+
+#define ZID_COCKPIT 0
+#define ZID_STEERING 1
+#define ZID_DRIVETRAIN 2
+
+#ifdef ZONE_COCKPIT
+#define ZONE_ID ZID_COCKPIT 
+#endif
+
+#ifdef ZONE_STEERING
+#define ZONE_ID ZID_STEERING
+#endif
+
+#ifdef ZONE_DRIVETRAIN
+#define ZONE_ID ZID_DRIVETRAIN
+#endif
 
 #endif

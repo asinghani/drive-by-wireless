@@ -7,6 +7,11 @@
 #include "peripherals/testpoints.h"
 #include "peripherals/steering_wheel.h"
 
+#include "decawave/uwb_config.h"
+#include "decawave/uwb_library.h"
+#include "config.h"
+#include "utils.h"
+
 struct CockpitState {
     int8_t angle;
     uint8_t throttle;
@@ -24,6 +29,8 @@ struct CockpitState {
 void cockpit_setup() {
     memset(&shm_cockpit, 0, sizeof(shm_cockpit));
     wheel_setup();
+
+    uwb_init();
 }
 
 static void cockpit_uwb_task(void *arg);
@@ -59,13 +66,33 @@ void cockpit_main() {
     vTaskStartScheduler();
 }
 
+
+static uint8_t rx_buffer[127];
+static uint8_t tx_msg[125];
+
 static void cockpit_uwb_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
+    printf("start UWB leader\n");
+
+    int ctr = 0;
+    bool success;
     while (true) {
-        tp_statusled(shm_cockpit.btn_brake);
-        shm_cockpit.feedback = shm_cockpit.btn_brake ? 0 : shm_cockpit.angle;
-		vTaskDelayUntil(&tick, 20);
+        tx_msg[0] = ZONE_ID;
+        tx_msg[1] = ZID_STEERING;
+        send_msg(sizeof(tx_msg), tx_msg, 0);
+        memset(rx_buffer, 0, sizeof(rx_buffer));
+        success = (receive_msg(rx_buffer) != -1);
+        if (success) printf("got %d\n", rx_buffer[0], rx_buffer[1]);
+
+        tx_msg[0] = ZONE_ID;
+        tx_msg[1] = ZID_DRIVETRAIN;
+        send_msg(sizeof(tx_msg), tx_msg, 0);
+        memset(rx_buffer, 0, sizeof(rx_buffer));
+        success = (receive_msg(rx_buffer) != -1);
+        if (success) printf("got %d\n", rx_buffer[0], rx_buffer[1]);
+
+        ctr++;
     }
 }
 
@@ -98,7 +125,8 @@ static void cockpit_blinker_fsm_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-        //printf("angle %d\n", shm_cockpit.angle);
-		vTaskDelayUntil(&tick, 100);
+        tp_statusled(shm_cockpit.btn_brake);
+        shm_cockpit.feedback = shm_cockpit.btn_brake ? 0 : shm_cockpit.angle;
+		vTaskDelayUntil(&tick, 20);
     }
 }

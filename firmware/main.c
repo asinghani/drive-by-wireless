@@ -20,6 +20,7 @@ extern void steering_main();
 
 int main() {
     // Setup common peripherals
+    sleep_ms(1000);
     xosc_init();
     stdio_init_all();
     tp_init();
