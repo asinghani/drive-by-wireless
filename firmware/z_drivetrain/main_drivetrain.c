@@ -9,10 +9,7 @@
 
 struct DrivetrainState {
     int8_t motor_speed;
-    int8_t motor_direction;
     bool brake_state;
-
-
     // TODO blinker
 } shm_drivetrain;
 
@@ -60,7 +57,7 @@ static void drivetrain_motor_task(void *arg) {
 
     while (true) {
 		vTaskDelayUntil(&tick, 10);
-        drivetrain_motor_set(shm_drivetrain.speed, shm_drivetrain.direction, shm_drivetrain.brake_state);
+        drivetrain_motor_set(shm_drivetrain.speed, shm_drivetrain.brake_state);
     }
 }
 
