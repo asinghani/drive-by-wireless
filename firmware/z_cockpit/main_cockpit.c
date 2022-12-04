@@ -8,6 +8,7 @@
 #include "peripherals/steering_wheel.h"
 #include "hardware/watchdog.h"
 
+#include "crypto/crypto.h"
 #include "decawave/uwb_config.h"
 #include "decawave/uwb_library.h"
 #include "blinker_fsm.h"
@@ -80,6 +81,8 @@ void cockpit_main() {
 
 
 static uint8_t tx_pkt_raw[120];
+static uint8_t tx_pkt_enc[120];
+static uint8_t rx_pkt_enc[128];
 static uint8_t rx_pkt_raw[128];
 
 static void cockpit_uwb_task(void *arg) {
@@ -112,14 +115,14 @@ static void cockpit_uwb_task(void *arg) {
         // Request-response with steering zone
         tx_pkt->dst = ZID_STEERING;
         tx_pkt->current_ts = millis();
-        // TODO encryption
+        crypto_encrypt(tx_pkt_raw, tx_pkt_enc);
         tp_raise(ZC_TP_UWB_TX);
-        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
-        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw, NULL) != -1);
+        send_msg(sizeof(tx_pkt_enc), tx_pkt_enc, 0, NULL);
+        memset(rx_pkt_enc, 0, sizeof(rx_pkt_enc));
+        success = (receive_msg(rx_pkt_enc, NULL) != -1);
+        success = success && crypto_decrypt(rx_pkt_enc, rx_pkt_raw);
         success = success && (pkt_d->src == ZID_STEERING) &&
                     (pkt_d->dst == ZONE_ID);
-        // TODO decryption
         if (success) {
             tp_raise(ZC_TP_UWB_RX);
             num_steering_failures = 0;
@@ -127,21 +130,22 @@ static void cockpit_uwb_task(void *arg) {
         }
         else num_steering_failures++;
 
-        busy_wait_us(1000);
+        busy_wait_us(800);
         watchdog_update();
 
 
         // Request-response with drivetrain zone
         tx_pkt->dst = ZID_DRIVETRAIN;
         tx_pkt->current_ts = millis();
-        // TODO encryption
+        crypto_encrypt(tx_pkt_raw, tx_pkt_enc);
         tp_raise(ZC_TP_UWB_TX);
-        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
-        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw, NULL) != -1);
+        send_msg(sizeof(tx_pkt_enc), tx_pkt_enc, 0, NULL);
+        memset(rx_pkt_enc, 0, sizeof(rx_pkt_enc));
+        success = (receive_msg(rx_pkt_enc, NULL) != -1);
+        success = success && crypto_decrypt(rx_pkt_enc, rx_pkt_raw);
         success = success && (pkt_d->src == ZID_DRIVETRAIN) &&
                     (pkt_d->dst == ZONE_ID);
-        // TODO decryption
+
         if (success) {
             tp_raise(ZC_TP_UWB_RX);
             num_drivetrain_failures = 0;
@@ -150,7 +154,7 @@ static void cockpit_uwb_task(void *arg) {
         }
         else num_drivetrain_failures++;
 
-        busy_wait_us(2000);
+        busy_wait_us(1500);
         watchdog_update();
 
 

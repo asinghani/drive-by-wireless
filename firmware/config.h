@@ -35,6 +35,7 @@
 #define STEERING_SERVO_RANGE 300
 #define STEERING_FEEDBACK_IO IO_1
 #define STEERING_FEEDBACK_ADC 2 // ch2 = gpio28
+#define STEERING_LED_STRIP_IO IO_7
 
 // Drivetrain zone config
 #define DRIVETRAIN_EN  IO_8

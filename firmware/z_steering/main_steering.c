@@ -7,6 +7,7 @@
 #include "peripherals/testpoints.h"
 #include "peripherals/steering_servo.h"
 #include "peripherals/blinkers.h"
+#include "peripherals/led_strip.h"
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -14,6 +15,7 @@
 #include "hardware/watchdog.h"
 #include "config.h"
 
+#include "crypto/crypto.h"
 #include "decawave/uwb_config.h"
 #include "decawave/uwb_library.h"
 #include "config.h"
@@ -40,6 +42,7 @@ void steering_setup() {
 
     uwb_init();
     blinkers_init();
+    led_strip_init();
 }
 
 static void steering_uwb_task(void *arg);
@@ -75,6 +78,8 @@ void _steering_uwb_task_idle() {
 }
 
 static uint8_t tx_pkt_raw[120];
+static uint8_t tx_pkt_enc[120];
+static uint8_t rx_pkt_enc[128];
 static uint8_t rx_pkt_raw[128];
 
 static void steering_uwb_task(void *arg) {
@@ -90,8 +95,9 @@ static void steering_uwb_task(void *arg) {
     cockpit_pkt_t *rx_pkt = (void*) &rx_pkt_raw;
 
     while (true) {
-        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw, _steering_uwb_task_idle) != -1);
+        memset(rx_pkt_enc, 0, sizeof(rx_pkt_enc));
+        success = (receive_msg(rx_pkt_enc, _steering_uwb_task_idle) != -1);
+        success = success && crypto_decrypt(rx_pkt_enc, rx_pkt_raw);
         if (success && (rx_pkt->src == ZID_COCKPIT) && 
                 (rx_pkt->dst == ZONE_ID)) {
             tp_raise(ZS_TP_UWB_RX);
@@ -108,8 +114,9 @@ static void steering_uwb_task(void *arg) {
             tx_pkt->dst = ZID_COCKPIT;
             tx_pkt->feedback = shm_steering.feedback;
 
-            tp_raise(ZS_TP_UWB_TX);
-            send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, _steering_uwb_task_idle);
+            crypto_encrypt(tx_pkt_raw, tx_pkt_enc);
+            tp_raise(ZD_TP_UWB_TX);
+            send_msg(sizeof(tx_pkt_enc), tx_pkt_enc, 0, _steering_uwb_task_idle);
         }
 
         if ((millis() - last_rx_ts) > COMM_TIMEOUT_MS) {
@@ -141,5 +148,6 @@ static void steering_feedback_task(void *arg) {
 		vTaskDelayUntil(&tick, 10);
         shm_steering.feedback = steering_servo_get_feedback(shm_steering.angle);
         tp_raise(ZS_TP_FORCE_READ);
+        led_strip_set();
     }
 }

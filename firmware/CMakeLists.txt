@@ -18,6 +18,9 @@ function(setup_target target_name)
         ${headers}
     )
 
+    pico_generate_pio_header(${target_name}
+        ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
+
     target_compile_definitions(${target_name} PUBLIC
         PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64
     )
@@ -37,6 +40,7 @@ function(setup_target target_name)
         hardware_adc
         hardware_pwm
         hardware_spi
+        hardware_pio
         hardware_clocks
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap1

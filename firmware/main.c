@@ -14,6 +14,7 @@
 #include "hardware/uart.h"
 #include "hardware/xosc.h"
 #include "hardware/watchdog.h"
+#include "crypto/crypto.h"
 
 extern void cockpit_main();
 extern void drivetrain_main();
@@ -25,6 +26,7 @@ int main() {
     xosc_init();
     stdio_init_all();
     tp_init();
+    crypto_init();
 
     watchdog_enable(500, 1);
 

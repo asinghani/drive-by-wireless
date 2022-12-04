@@ -15,6 +15,7 @@
 #include "hardware/watchdog.h"
 #include "config.h"
 
+#include "crypto/crypto.h"
 #include "decawave/uwb_config.h"
 #include "decawave/uwb_library.h"
 #include "config.h"
@@ -79,6 +80,8 @@ void _drivetrain_uwb_task_idle() {
 }
 
 static uint8_t tx_pkt_raw[120];
+static uint8_t tx_pkt_enc[120];
+static uint8_t rx_pkt_enc[128];
 static uint8_t rx_pkt_raw[128];
 
 static void drivetrain_uwb_task(void *arg) {
@@ -94,8 +97,9 @@ static void drivetrain_uwb_task(void *arg) {
     cockpit_pkt_t *rx_pkt = (void*) &rx_pkt_raw;
 
     while (true) {
-        memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw, _drivetrain_uwb_task_idle) != -1);
+        memset(rx_pkt_raw, 0, sizeof(rx_pkt_enc));
+        success = (receive_msg(rx_pkt_enc, _drivetrain_uwb_task_idle) != -1);
+        success = success && crypto_decrypt(rx_pkt_enc, rx_pkt_raw);
         if (success && (rx_pkt->src == ZID_COCKPIT) && 
                 (rx_pkt->dst == ZONE_ID)) {
 
@@ -114,8 +118,9 @@ static void drivetrain_uwb_task(void *arg) {
             tx_pkt->dst = ZID_COCKPIT;
             tx_pkt->voltage_vbat = shm_drivetrain.voltage_vbat;
             tx_pkt->voltage_vreg = shm_drivetrain.voltage_vreg;
+            crypto_encrypt(tx_pkt_raw, tx_pkt_enc);
             tp_raise(ZD_TP_UWB_TX);
-            send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, _drivetrain_uwb_task_idle);
+            send_msg(sizeof(tx_pkt_enc), tx_pkt_enc, 0, _drivetrain_uwb_task_idle);
         }
 
         if ((millis() - last_rx_ts) > COMM_TIMEOUT_MS) {
