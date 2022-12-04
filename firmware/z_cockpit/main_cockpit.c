@@ -6,6 +6,7 @@
 #include <string.h>
 #include "peripherals/testpoints.h"
 #include "peripherals/steering_wheel.h"
+#include "hardware/watchdog.h"
 
 #include "decawave/uwb_config.h"
 #include "decawave/uwb_library.h"
@@ -24,6 +25,7 @@ struct CockpitState {
     float voltage_vbat;
     float voltage_vreg;
 
+    int32_t blinker_basis_ts;
     bool blinker_left;
     bool blinker_right;
 } shm_cockpit;
@@ -96,17 +98,17 @@ static void cockpit_uwb_task(void *arg) {
         tx_pkt->throttle = shm_cockpit.throttle;
         tx_pkt->brake = shm_cockpit.btn_brake;
         tx_pkt->is_failure_state = is_failure_state;
-        tx_pkt->blinker_start_ts = 0;
-        tx_pkt->blink_left = false;
-        tx_pkt->blink_right = false;
+        tx_pkt->blinker_basis_ts = shm_cockpit.blinker_basis_ts;
+        tx_pkt->blink_left = shm_cockpit.blinker_left;
+        tx_pkt->blink_right = shm_cockpit.blinker_right;
 
         // Request-response with steering zone
         tx_pkt->dst = ZID_STEERING;
-        tx_pkt->current_ts = 0; // TODO millis();
+        tx_pkt->current_ts = millis();
         // TODO encryption
-        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
+        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
         memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw) != -1);
+        success = (receive_msg(rx_pkt_raw, NULL) != -1);
         success = success && (pkt_d->src == ZID_STEERING) &&
                     (pkt_d->dst == ZONE_ID);
         // TODO decryption
@@ -117,15 +119,16 @@ static void cockpit_uwb_task(void *arg) {
         else num_steering_failures++;
 
         busy_wait_us(2000);
+        watchdog_update();
 
 
         // Request-response with drivetrain zone
         tx_pkt->dst = ZID_DRIVETRAIN;
-        tx_pkt->current_ts = 0; // TODO millis();
+        tx_pkt->current_ts = millis();
         // TODO encryption
-        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0);
+        send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
         memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
-        success = (receive_msg(rx_pkt_raw) != -1);
+        success = (receive_msg(rx_pkt_raw, NULL) != -1);
         success = success && (pkt_d->src == ZID_DRIVETRAIN) &&
                     (pkt_d->dst == ZONE_ID);
         // TODO decryption
@@ -137,6 +140,7 @@ static void cockpit_uwb_task(void *arg) {
         else num_drivetrain_failures++;
 
         busy_wait_us(2000);
+        watchdog_update();
 
 
         if ((num_steering_failures > MAX_COMM_FAILURES) || 
@@ -145,8 +149,8 @@ static void cockpit_uwb_task(void *arg) {
             is_failure_state = true;
 
             // Don't inundate console with prints
-            if ((ctr % 10) == 0) {
-                printf("failure state %d %d\n", num_steering_failures,
+            if ((ctr % 30) == 0) {
+                printf("failure %d %d\n", num_steering_failures,
                         num_drivetrain_failures);
             }
 
@@ -171,7 +175,6 @@ static void cockpit_wheel_read_task(void *arg) {
         int angle = wheel_get_angle();
         iir = 0.8*iir + 0.2*angle;
         iir = clamp(iir, -100, 100);
-        
 
         shm_cockpit.angle = clamp(iir, -95, 95);
         shm_cockpit.throttle = wheel_get_throttle();
@@ -194,8 +197,27 @@ static void cockpit_wheel_write_task(void *arg) {
 static void cockpit_blinker_fsm_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
+    int state = 0;
     while (true) {
-        //shm_cockpit.feedback = shm_cockpit.btn_brake ? 0 : shm_cockpit.angle;
+        if (shm_cockpit.btn_brake && (state != 0)) {
+            state = 0;
+            shm_cockpit.blinker_left = false;
+            shm_cockpit.blinker_right = false;
+            shm_cockpit.blinker_basis_ts = millis() + 100;
+
+        } else if (shm_cockpit.btn_BL && (state != 1)) {
+            state = 1;
+            shm_cockpit.blinker_left = true;
+            shm_cockpit.blinker_right = false;
+            shm_cockpit.blinker_basis_ts = millis() + 100;
+
+        } else if (shm_cockpit.btn_BR && (state != 2)) {
+            state = 2;
+            shm_cockpit.blinker_left = false;
+            shm_cockpit.blinker_right = true;
+            shm_cockpit.blinker_basis_ts = millis() + 100;
+        }
+
 		vTaskDelayUntil(&tick, 20);
     }
 }

@@ -16,6 +16,12 @@
 #define MAX_COMM_FAILURES 5
 #define COMM_TIMEOUT_MS 80
 
+// Half of the period of blinkers when in error-state
+#define ERROR_BLINKER_RATE_MS 150
+
+// Half of the period of the blinkers
+#define BLINKER_RATE_MS 500
+
 // Cockpit zone config
 #define STEERING_UART uart1
 #define STEERING_RX IO_8

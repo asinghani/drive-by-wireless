@@ -13,6 +13,7 @@
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
 #include "hardware/xosc.h"
+#include "hardware/watchdog.h"
 
 extern void cockpit_main();
 extern void drivetrain_main();
@@ -24,6 +25,8 @@ int main() {
     xosc_init();
     stdio_init_all();
     tp_init();
+
+    watchdog_enable(500, 1);
 
     for (int i = 0; i <= 4; i++) {
         tp_statusled(i % 2);

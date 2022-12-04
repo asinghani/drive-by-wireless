@@ -55,7 +55,7 @@ void uwb_reset() {
 }
 
 // Function to receive UWB message into buffer
-int receive_msg(uint8_t *rx_buf) {
+int receive_msg(uint8_t *rx_buf, void (*idle_task)()) {
     /* Activate reception immediately. See NOTE 2 below. */
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
@@ -73,6 +73,10 @@ int receive_msg(uint8_t *rx_buf) {
      * function to access it. */
     while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_ERR )))
     {
+        if (idle_task) {
+            idle_task();
+            busy_wait_us(10);
+        }
     };
 
     /*if (status_reg & SYS_STATUS_ALL_RX_ERR) {
@@ -96,6 +100,7 @@ int receive_msg(uint8_t *rx_buf) {
         /* Clear good RX frame event in the DW IC status register. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
 
+        if (status_reg & SYS_STATUS_ALL_RX_ERR) return -1;
         return frame_len;
     }
     else {
@@ -106,7 +111,7 @@ int receive_msg(uint8_t *rx_buf) {
 }
 
 // Function to send message via UWB
-void send_msg(uint16_t msg_len, uint8_t *tx_buf, uint16_t msg_offset) {
+void send_msg(uint16_t msg_len, uint8_t *tx_buf, uint16_t msg_offset, void (*idle_task)()) {
     /* Write frame data to DW IC and prepare transmission */
     dwt_writetxdata(msg_len, tx_buf, msg_offset);
 
@@ -123,8 +128,12 @@ void send_msg(uint16_t msg_len, uint8_t *tx_buf, uint16_t msg_offset) {
      * STATUS register is 4 bytes long but, as the event we are looking at
      * is in the first byte of the register, we can use this simplest API
      * function to access it.*/
-    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK))
-    {};
+    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK)) {
+        if (idle_task) {
+            idle_task();
+            busy_wait_us(10);
+        }
+    };
 
     /* Clear TX frame sent event. */
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);

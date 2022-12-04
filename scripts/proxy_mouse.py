@@ -9,7 +9,8 @@ import pygame
 
 from uart_interface import *
 
-UPDATE_INTERVAL_MS = 50
+QUANTIZE = False
+UPDATE_INTERVAL_MS = 30
 PORT = sys.argv[1]
 
 iface = UARTWheelInterface(PORT)
@@ -17,6 +18,9 @@ iface.start()
 
 screen = pygame.display.set_mode((400, 400))
 pygame.display.set_caption("Steering Wheel")
+
+def quantize(x, n):
+    return round(x / n) * n
 
 while True:
     pygame.time.wait(10)
@@ -35,6 +39,14 @@ while True:
 
         steer = clamp(int((x - 200) / 2), -100, 100)
         throttle = clamp(int((200 - y) / 2), 0, 100)
+
+        if QUANTIZE:
+            steer = quantize(steer, 20)
+            throttle = quantize(throttle, 20)
+
+        x = 200 + 2*steer
+        y = 200 - 2*throttle
+
 
         BL = pygame.key.get_pressed()[pygame.K_LEFT]
         BR = pygame.key.get_pressed()[pygame.K_RIGHT]

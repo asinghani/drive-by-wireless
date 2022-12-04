@@ -56,7 +56,7 @@ void uwb_reset(void);
  *
  * @return len - length of incoming message 
  */
-int receive_msg(uint8_t *rx_buf);
+int receive_msg(uint8_t *rx_buf, void (*idle_task)());
 
 /*! ------------------------------------------------------------------------------------------------------------------
  * @brief  This function is used to send a message using UWB
@@ -70,4 +70,4 @@ int receive_msg(uint8_t *rx_buf);
  *
  * @return len - length of incoming message, returns -1 if no message received
  */
-void send_msg(uint16_t msg_len, uint8_t *tx_buf, uint16_t msg_offset);
+void send_msg(uint16_t msg_len, uint8_t *tx_buf, uint16_t msg_offset, void (*idle_task)());

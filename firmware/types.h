@@ -14,7 +14,7 @@ typedef struct cockpit_pkt {
     bool brake;
 
     int32_t current_ts;
-    int32_t blinker_start_ts;
+    int32_t blinker_basis_ts;
     bool blink_left;
     bool blink_right;
 
