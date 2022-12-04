@@ -9,7 +9,7 @@
 dwt_txconfig_t txconfig_options =
 {
     0x34,           /* PG delay. */
-    0xfdfdfdfd,      /* TX power. */
+    0xffffffff,      /* TX power. */
     0x0             /*PG count*/
 };
 

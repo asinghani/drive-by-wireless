@@ -42,6 +42,7 @@ void cockpit_setup() {
 static void cockpit_uwb_task(void *arg);
 static void cockpit_wheel_read_task(void *arg);
 static void cockpit_wheel_write_task(void *arg);
+static void cockpit_diag_task(void *arg);
 static void cockpit_blinker_fsm_task(void *arg);
 
 void cockpit_main() {
@@ -67,6 +68,11 @@ void cockpit_main() {
     xTaskCreate(cockpit_blinker_fsm_task, "cockpit_blinker_fsm_task",
             configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &blinker_fsm_task);
     vTaskCoreAffinitySet(blinker_fsm_task, 1);
+
+    TaskHandle_t diag_task;
+    xTaskCreate(cockpit_diag_task, "cockpit_diag_task",
+            configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, &diag_task);
+    vTaskCoreAffinitySet(diag_task, 1);
 
     printf("Starting scheduler\n");
     vTaskStartScheduler();
@@ -191,8 +197,16 @@ static void cockpit_wheel_write_task(void *arg) {
 
     while (true) {
 		vTaskDelayUntil(&tick, 10);
-        //printf("FEEDBACK %d\n", shm_cockpit.feedback);
         wheel_send_feedback(shm_cockpit.feedback);
+    }
+}
+
+static void cockpit_diag_task(void *arg) {
+	TickType_t tick = xTaskGetTickCount();
+
+    while (true) {
+		vTaskDelayUntil(&tick, 500);
+        printf("diag %f %f\n", shm_cockpit.voltage_vbat, shm_cockpit.voltage_vreg);
     }
 }
 
@@ -207,6 +221,8 @@ static void cockpit_blinker_fsm_task(void *arg) {
     while (true) {
         int next_state = blinker_fsm_transition(shm_cockpit.btn_BL, shm_cockpit.btn_BR, shm_cockpit.angle);
 
+        // Only update the basis timestamps during the initial transition
+        // This makes time-sync a lot smoother
         if (state != next_state) {
             state = next_state;
             if (state == BLINKER_NONE) {

@@ -7,6 +7,7 @@
 #include "peripherals/testpoints.h"
 #include "peripherals/blinkers.h"
 #include "peripherals/drive_motor.h"
+#include "peripherals/voltage_monitor.h"
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -42,10 +43,12 @@ void drivetrain_setup() {
     uwb_init();
     blinkers_init();
     drive_motor_init();
+    voltage_monitor_init();
 }
 
 static void drivetrain_uwb_task(void *arg);
 static void drivetrain_motor_task(void *arg);
+static void drivetrain_vmon_task(void *arg);
 
 void drivetrain_main() {
     printf("Start drivetrain_main\n");
@@ -60,6 +63,11 @@ void drivetrain_main() {
     xTaskCreate(drivetrain_motor_task, "drivetrain_motor_task",
             configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &motor_task);
     vTaskCoreAffinitySet(motor_task, 1);
+
+    TaskHandle_t vmon_task;
+    xTaskCreate(drivetrain_vmon_task, "drivetrain_vmon_task",
+            configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, &vmon_task);
+    vTaskCoreAffinitySet(vmon_task, 1);
 
     printf("Starting scheduler\n");
     vTaskStartScheduler();
@@ -127,5 +135,15 @@ static void drivetrain_motor_task(void *arg) {
 		vTaskDelayUntil(&tick, 5);
         drive_motor_set(shm_drivetrain.is_failure_state ? 0 : shm_drivetrain.throttle,
                 shm_drivetrain.is_failure_state ? 1 : shm_drivetrain.brake);
+    }
+}
+
+static void drivetrain_vmon_task(void *arg) {
+	TickType_t tick = xTaskGetTickCount();
+
+    while (true) {
+		vTaskDelayUntil(&tick, 200);
+        shm_drivetrain.voltage_vbat = voltage_monitor_get_vbat();
+        shm_drivetrain.voltage_vreg = voltage_monitor_get_5v();
     }
 }

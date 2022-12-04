@@ -40,6 +40,14 @@
 #define DRIVETRAIN_EN  IO_8
 #define DRIVETRAIN_IN1 IO_9
 #define DRIVETRAIN_IN2 IO_10
+#define VMON_VBAT IO_1
+#define VMON_VBAT_ADC 2 // ch2 = gpio28
+#define VMON_5V   IO_2
+#define VMON_5V_ADC   1 // ch1 = gpio27
+
+// Calibrated emperically
+#define VMON_VBAT_SCALE 0.00618871
+#define VMON_5V_SCALE 0.00619207
 
 // Blinker I/O pins
 #define IO_BLINKL 18
@@ -60,6 +68,9 @@
 #define IO_TP4 4
 #define IO_TP5 5
 #define IO_TP6 6
+
+// Test point definitions
+#define ZC_TP_1 1
 
 // UWB config
 #define UWB_PIN_MISO 12
