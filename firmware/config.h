@@ -16,11 +16,13 @@
 #define MAX_COMM_FAILURES 5
 #define COMM_TIMEOUT_MS 80
 
-// Half of the period of blinkers when in error-state
+// Blinker rates
 #define ERROR_BLINKER_RATE_MS 150
-
-// Half of the period of the blinkers
 #define BLINKER_RATE_MS 500
+
+// Blinker control config
+#define STEER_THRESH1 30
+#define STEER_THRESH2 60
 
 // Cockpit zone config
 #define STEERING_UART uart1
@@ -35,7 +37,9 @@
 #define STEERING_FEEDBACK_ADC 2 // ch2 = gpio28
 
 // Drivetrain zone config
-
+#define DRIVETRAIN_EN  IO_8
+#define DRIVETRAIN_IN1 IO_9
+#define DRIVETRAIN_IN2 IO_10
 
 // Blinker I/O pins
 #define IO_BLINKL 18

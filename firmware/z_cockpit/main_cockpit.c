@@ -10,6 +10,7 @@
 
 #include "decawave/uwb_config.h"
 #include "decawave/uwb_library.h"
+#include "blinker_fsm.h"
 #include "config.h"
 #include "utils.h"
 #include "types.h"
@@ -169,9 +170,10 @@ static void cockpit_wheel_read_task(void *arg) {
     float iir = 0;
 
     while (true) {
-		vTaskDelayUntil(&tick, 20);
+		vTaskDelayUntil(&tick, 10);
         wheel_update();
 
+        // Smoothing filter on the wheel
         int angle = wheel_get_angle();
         iir = 0.8*iir + 0.2*angle;
         iir = clamp(iir, -100, 100);
@@ -188,7 +190,7 @@ static void cockpit_wheel_write_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-		vTaskDelayUntil(&tick, 20);
+		vTaskDelayUntil(&tick, 10);
         //printf("FEEDBACK %d\n", shm_cockpit.feedback);
         wheel_send_feedback(shm_cockpit.feedback);
     }
@@ -197,27 +199,33 @@ static void cockpit_wheel_write_task(void *arg) {
 static void cockpit_blinker_fsm_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
-    int state = 0;
+    shm_cockpit.blinker_left = false;
+    shm_cockpit.blinker_right = false;
+    shm_cockpit.blinker_basis_ts = millis() + 100;
+
+    int state = BLINKER_NONE;
     while (true) {
-        if (shm_cockpit.btn_brake && (state != 0)) {
-            state = 0;
-            shm_cockpit.blinker_left = false;
-            shm_cockpit.blinker_right = false;
-            shm_cockpit.blinker_basis_ts = millis() + 100;
+        int next_state = blinker_fsm_transition(shm_cockpit.btn_BL, shm_cockpit.btn_BR, shm_cockpit.angle);
 
-        } else if (shm_cockpit.btn_BL && (state != 1)) {
-            state = 1;
-            shm_cockpit.blinker_left = true;
-            shm_cockpit.blinker_right = false;
-            shm_cockpit.blinker_basis_ts = millis() + 100;
+        if (state != next_state) {
+            state = next_state;
+            if (state == BLINKER_NONE) {
+                shm_cockpit.blinker_left = false;
+                shm_cockpit.blinker_right = false;
+                shm_cockpit.blinker_basis_ts = millis() + 100;
 
-        } else if (shm_cockpit.btn_BR && (state != 2)) {
-            state = 2;
-            shm_cockpit.blinker_left = false;
-            shm_cockpit.blinker_right = true;
-            shm_cockpit.blinker_basis_ts = millis() + 100;
+            } else if (state == BLINKER_LEFT) {
+                shm_cockpit.blinker_left = true;
+                shm_cockpit.blinker_right = false;
+                shm_cockpit.blinker_basis_ts = millis() + 100;
+
+            } else if (state == BLINKER_RIGHT) {
+                shm_cockpit.blinker_left = false;
+                shm_cockpit.blinker_right = true;
+                shm_cockpit.blinker_basis_ts = millis() + 100;
+            }
         }
 
-		vTaskDelayUntil(&tick, 20);
+		vTaskDelayUntil(&tick, 10);
     }
 }

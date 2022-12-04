@@ -6,6 +6,7 @@
 #include <string.h>
 #include "peripherals/testpoints.h"
 #include "peripherals/blinkers.h"
+#include "peripherals/drive_motor.h"
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -40,6 +41,7 @@ void drivetrain_setup() {
 
     uwb_init();
     blinkers_init();
+    drive_motor_init();
 }
 
 static void drivetrain_uwb_task(void *arg);
@@ -122,6 +124,8 @@ static void drivetrain_motor_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-		vTaskDelayUntil(&tick, 10);
+		vTaskDelayUntil(&tick, 5);
+        drive_motor_set(shm_drivetrain.is_failure_state ? 0 : shm_drivetrain.throttle,
+                shm_drivetrain.is_failure_state ? 1 : shm_drivetrain.brake);
     }
 }
