@@ -7,7 +7,6 @@
 #include "peripherals/testpoints.h"
 #include "peripherals/steering_servo.h"
 #include "peripherals/blinkers.h"
-#include "peripherals/led_strip.h"
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -42,7 +41,6 @@ void steering_setup() {
 
     uwb_init();
     blinkers_init();
-    led_strip_init();
 }
 
 static void steering_uwb_task(void *arg);
@@ -148,6 +146,5 @@ static void steering_feedback_task(void *arg) {
 		vTaskDelayUntil(&tick, 10);
         shm_steering.feedback = steering_servo_get_feedback(shm_steering.angle);
         tp_raise(ZS_TP_FORCE_READ);
-        led_strip_set();
     }
 }

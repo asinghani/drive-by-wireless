@@ -12,6 +12,7 @@
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
 #include "hardware/adc.h"
+#include "hardware/uart.h"
 #include "hardware/watchdog.h"
 #include "config.h"
 
@@ -45,11 +46,16 @@ void drivetrain_setup() {
     blinkers_init();
     drive_motor_init();
     voltage_monitor_init();
+
+    // Setup LED strip
+    uart_init(DRIVETRAIN_LED_STRIP_UART, 115200);
+    gpio_set_function(DRIVETRAIN_LED_STRIP_TX, GPIO_FUNC_UART);
 }
 
 static void drivetrain_uwb_task(void *arg);
 static void drivetrain_motor_task(void *arg);
 static void drivetrain_vmon_task(void *arg);
+static void drivetrain_led_strip_task(void *arg);
 
 void drivetrain_main() {
     printf("Start drivetrain_main\n");
@@ -69,6 +75,11 @@ void drivetrain_main() {
     xTaskCreate(drivetrain_vmon_task, "drivetrain_vmon_task",
             configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, &vmon_task);
     vTaskCoreAffinitySet(vmon_task, 1);
+
+    TaskHandle_t led_strip_task;
+    xTaskCreate(drivetrain_led_strip_task, "drivetrain_led_strip_task",
+            configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, &led_strip_task);
+    vTaskCoreAffinitySet(led_strip_task, 1);
 
     printf("Starting scheduler\n");
     vTaskStartScheduler();
@@ -157,3 +168,17 @@ static void drivetrain_vmon_task(void *arg) {
         shm_drivetrain.voltage_vreg = voltage_monitor_get_5v();
     }
 }
+
+static void drivetrain_led_strip_task(void *arg) {
+	TickType_t tick = xTaskGetTickCount();
+
+    while (true) {
+		vTaskDelayUntil(&tick, 200);
+        uint8_t dat = shm_drivetrain.throttle;
+        if (shm_drivetrain.is_failure_state) dat = 0;
+        if (shm_drivetrain.brake) dat = 0;
+
+        uart_putc_raw(DRIVETRAIN_LED_STRIP_UART, dat);
+    }
+}
+

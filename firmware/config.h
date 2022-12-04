@@ -35,7 +35,6 @@
 #define STEERING_SERVO_RANGE 300
 #define STEERING_FEEDBACK_IO IO_1
 #define STEERING_FEEDBACK_ADC 2 // ch2 = gpio28
-#define STEERING_LED_STRIP_IO IO_7
 
 // Drivetrain zone config
 #define DRIVETRAIN_EN  IO_8
@@ -45,6 +44,9 @@
 #define VMON_VBAT_ADC 2 // ch2 = gpio28
 #define VMON_5V   IO_2
 #define VMON_5V_ADC   1 // ch1 = gpio27
+
+#define DRIVETRAIN_LED_STRIP_UART uart1
+#define DRIVETRAIN_LED_STRIP_TX IO_5
 
 // Calibrated emperically
 #define VMON_VBAT_SCALE 0.00618871
