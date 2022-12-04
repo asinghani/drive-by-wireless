@@ -70,7 +70,23 @@
 #define IO_TP6 6
 
 // Test point definitions
-#define ZC_TP_1 1
+#define ZC_TP_USB_IN  1
+#define ZC_TP_USB_OUT 2
+#define ZC_TP_UWB_RX  3
+#define ZC_TP_UWB_TX  4
+
+#define ZS_TP_UWB_RX     1
+#define ZS_TP_UWB_TX     2
+#define ZS_TP_STEER_SET  3
+#define ZS_TP_FORCE_READ 4
+
+#define ZD_TP_UWB_RX     1
+#define ZD_TP_UWB_TX     2
+#define ZD_TP_MOTOR_SET  3
+#define ZD_TP_IS_BRAKE   4
+
+#define ZDZS_TP_BLINK_L  5
+#define ZDZS_TP_BLINK_R  6
 
 // UWB config
 #define UWB_PIN_MISO 12

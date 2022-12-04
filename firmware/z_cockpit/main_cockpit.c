@@ -113,6 +113,7 @@ static void cockpit_uwb_task(void *arg) {
         tx_pkt->dst = ZID_STEERING;
         tx_pkt->current_ts = millis();
         // TODO encryption
+        tp_raise(ZC_TP_UWB_TX);
         send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
         memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
         success = (receive_msg(rx_pkt_raw, NULL) != -1);
@@ -120,12 +121,13 @@ static void cockpit_uwb_task(void *arg) {
                     (pkt_d->dst == ZONE_ID);
         // TODO decryption
         if (success) {
+            tp_raise(ZC_TP_UWB_RX);
             num_steering_failures = 0;
             shm_cockpit.feedback = pkt_s->feedback;
         }
         else num_steering_failures++;
 
-        busy_wait_us(2000);
+        busy_wait_us(1000);
         watchdog_update();
 
 
@@ -133,6 +135,7 @@ static void cockpit_uwb_task(void *arg) {
         tx_pkt->dst = ZID_DRIVETRAIN;
         tx_pkt->current_ts = millis();
         // TODO encryption
+        tp_raise(ZC_TP_UWB_TX);
         send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, NULL);
         memset(rx_pkt_raw, 0, sizeof(rx_pkt_raw));
         success = (receive_msg(rx_pkt_raw, NULL) != -1);
@@ -140,6 +143,7 @@ static void cockpit_uwb_task(void *arg) {
                     (pkt_d->dst == ZONE_ID);
         // TODO decryption
         if (success) {
+            tp_raise(ZC_TP_UWB_RX);
             num_drivetrain_failures = 0;
             shm_cockpit.voltage_vbat = pkt_d->voltage_vbat;
             shm_cockpit.voltage_vreg = pkt_d->voltage_vreg;
@@ -156,6 +160,7 @@ static void cockpit_uwb_task(void *arg) {
             is_failure_state = true;
 
             // Don't inundate console with prints
+            // TODO move this to the diagnostics thread
             if ((ctr % 30) == 0) {
                 printf("failure %d %d\n", num_steering_failures,
                         num_drivetrain_failures);
@@ -178,8 +183,10 @@ static void cockpit_wheel_read_task(void *arg) {
     while (true) {
 		vTaskDelayUntil(&tick, 10);
         wheel_update();
+        tp_raise(ZC_TP_USB_IN);
 
         // Smoothing filter on the wheel
+        // makes driving nicer esp. on sim wheel
         int angle = wheel_get_angle();
         iir = 0.8*iir + 0.2*angle;
         iir = clamp(iir, -100, 100);
@@ -197,6 +204,7 @@ static void cockpit_wheel_write_task(void *arg) {
 
     while (true) {
 		vTaskDelayUntil(&tick, 10);
+        tp_raise(ZC_TP_USB_OUT);
         wheel_send_feedback(shm_cockpit.feedback);
     }
 }
@@ -242,6 +250,6 @@ static void cockpit_blinker_fsm_task(void *arg) {
             }
         }
 
-		vTaskDelayUntil(&tick, 10);
+		vTaskDelayUntil(&tick, 3);
     }
 }

@@ -37,3 +37,8 @@ void tp_raise(int tp) {
     gpio_put(tp, 0);
     xTaskResumeAll();
 }
+
+void tp_set(int tp, int val) {
+    xassert((tp >= 1) && (tp <= 6));
+    gpio_put(tp, val);
+}

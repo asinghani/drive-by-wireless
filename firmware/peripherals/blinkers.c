@@ -9,6 +9,7 @@
 #include "config.h"
 #include "utils.h"
 #include "blinkers.h"
+#include "testpoints.h"
 
 int32_t _blinker_basis_ts = 0;
 bool _blinker_left = false;
@@ -34,7 +35,9 @@ void blinkers_update(int32_t offset, int32_t basis_ts, bool blink_left, bool bli
         state = (state / ERROR_BLINKER_RATE_MS);
         state = state & 1;
         gpio_put(IO_BLINKL, state);
+        tp_set(ZDZS_TP_BLINK_L, state);
         gpio_put(IO_BLINKR, state);
+        tp_set(ZDZS_TP_BLINK_R, state);
 
     } else {
         // Basis is used for two different things:
@@ -53,13 +56,19 @@ void blinkers_update(int32_t offset, int32_t basis_ts, bool blink_left, bool bli
 
         if (_blinker_left) {
             gpio_put(IO_BLINKL, state);
+            tp_set(ZDZS_TP_BLINK_L, state);
             gpio_put(IO_BLINKR, 0);
+            tp_set(ZDZS_TP_BLINK_R, 0);
         } else if (_blinker_right) {
             gpio_put(IO_BLINKL, 0);
+            tp_set(ZDZS_TP_BLINK_L, 0);
             gpio_put(IO_BLINKR, state);
+            tp_set(ZDZS_TP_BLINK_R, state);
         } else {
             gpio_put(IO_BLINKL, 0);
+            tp_set(ZDZS_TP_BLINK_L, 0);
             gpio_put(IO_BLINKR, 0);
+            tp_set(ZDZS_TP_BLINK_R, 0);
         }
     }
 }

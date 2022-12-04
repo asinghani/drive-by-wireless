@@ -94,6 +94,7 @@ static void steering_uwb_task(void *arg) {
         success = (receive_msg(rx_pkt_raw, _steering_uwb_task_idle) != -1);
         if (success && (rx_pkt->src == ZID_COCKPIT) && 
                 (rx_pkt->dst == ZONE_ID)) {
+            tp_raise(ZS_TP_UWB_RX);
 
             last_rx_ts = millis();
             shm_steering.angle = rx_pkt->angle;
@@ -107,6 +108,7 @@ static void steering_uwb_task(void *arg) {
             tx_pkt->dst = ZID_COCKPIT;
             tx_pkt->feedback = shm_steering.feedback;
 
+            tp_raise(ZS_TP_UWB_TX);
             send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, _steering_uwb_task_idle);
         }
 
@@ -128,6 +130,7 @@ static void steering_servo_task(void *arg) {
     while (true) {
 		vTaskDelayUntil(&tick, 10);
         steering_servo_set(shm_steering.angle);
+        tp_raise(ZS_TP_STEER_SET);
     }
 }
 
@@ -135,7 +138,8 @@ static void steering_feedback_task(void *arg) {
 	TickType_t tick = xTaskGetTickCount();
 
     while (true) {
-		vTaskDelayUntil(&tick, 50);
+		vTaskDelayUntil(&tick, 10);
         shm_steering.feedback = steering_servo_get_feedback(shm_steering.angle);
+        tp_raise(ZS_TP_FORCE_READ);
     }
 }

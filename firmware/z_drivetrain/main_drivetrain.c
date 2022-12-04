@@ -99,6 +99,8 @@ static void drivetrain_uwb_task(void *arg) {
         if (success && (rx_pkt->src == ZID_COCKPIT) && 
                 (rx_pkt->dst == ZONE_ID)) {
 
+            tp_raise(ZD_TP_UWB_RX);
+
             last_rx_ts = millis();
             shm_drivetrain.throttle = rx_pkt->throttle;
             shm_drivetrain.brake = rx_pkt->brake;
@@ -112,6 +114,7 @@ static void drivetrain_uwb_task(void *arg) {
             tx_pkt->dst = ZID_COCKPIT;
             tx_pkt->voltage_vbat = shm_drivetrain.voltage_vbat;
             tx_pkt->voltage_vreg = shm_drivetrain.voltage_vreg;
+            tp_raise(ZD_TP_UWB_TX);
             send_msg(sizeof(tx_pkt_raw), tx_pkt_raw, 0, _drivetrain_uwb_task_idle);
         }
 
@@ -133,8 +136,10 @@ static void drivetrain_motor_task(void *arg) {
 
     while (true) {
 		vTaskDelayUntil(&tick, 5);
-        drive_motor_set(shm_drivetrain.is_failure_state ? 0 : shm_drivetrain.throttle,
-                shm_drivetrain.is_failure_state ? 1 : shm_drivetrain.brake);
+        bool is_brake = (shm_drivetrain.is_failure_state ? 1 : shm_drivetrain.brake);
+        drive_motor_set(shm_drivetrain.is_failure_state ? 0 : shm_drivetrain.throttle, is_brake);
+        tp_raise(ZD_TP_MOTOR_SET);
+        tp_set(ZD_TP_IS_BRAKE, is_brake);
     }
 }
 
