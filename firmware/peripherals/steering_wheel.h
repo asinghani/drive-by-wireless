@@ -13,4 +13,4 @@ bool wheel_get_B();
 bool wheel_get_X();
 bool wheel_get_Y();
 bool wheel_get_brake();
-
+bool wheel_is_valid();

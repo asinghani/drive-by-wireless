@@ -107,7 +107,7 @@ static void cockpit_uwb_task(void *arg) {
         tx_pkt->angle = shm_cockpit.angle;
         tx_pkt->throttle = shm_cockpit.throttle;
         tx_pkt->brake = shm_cockpit.btn_brake;
-        tx_pkt->is_failure_state = is_failure_state;
+        tx_pkt->is_failure_state = is_failure_state || (!wheel_is_valid());
         tx_pkt->blinker_basis_ts = shm_cockpit.blinker_basis_ts;
         tx_pkt->blink_left = shm_cockpit.blinker_left;
         tx_pkt->blink_right = shm_cockpit.blinker_right;

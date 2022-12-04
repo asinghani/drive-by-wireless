@@ -1,5 +1,6 @@
 #include "steering_wheel.h"
 #include "config.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include "hardware/uart.h"
@@ -8,6 +9,8 @@
 int8_t steering = 0;
 uint8_t throttle = 0;
 uint8_t buttons = 0;
+
+uint32_t wheel_last_ms = 0;
 
 void wheel_setup() {
     uart_init(STEERING_UART, 115200);
@@ -46,6 +49,7 @@ bool wheel_update() {
     steering = (int8_t) m_steering;
     throttle = m_throttle;
     buttons = m_buttons;
+    wheel_last_ms = millis();
 
     return true;
 }
@@ -63,4 +67,4 @@ bool wheel_get_B() { return !!(buttons & 0x10); }
 bool wheel_get_X() { return !!(buttons & 0x08); }
 bool wheel_get_Y() { return !!(buttons & 0x04); }
 bool wheel_get_brake() { return !!(buttons & 0x02); }
-
+bool wheel_is_valid() { return (millis() - wheel_last_ms) < 1000; }
